@@ -30,3 +30,32 @@ OPTIONS:
 ARGS:
     <URI>    URI to target
 ```
+
+
+### DNS
+
+Check the status of a dns server/resolver.
+
+```
+dns-watchdog
+DNS watchdog for exabgp
+
+USAGE:
+    dns-watchdog [OPTIONS] <SERVER> <NAME> [QUERY_TYPE]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+        --attempts <ATTEMPTS>     number of attempts after considering that the DNS server is down. [default: 2]
+        --delay <SECONDS>         delay between tests. [default: 1]
+        --port <PORT>             dns server port. [default: 53]
+    -t, --timeout <SECONDS>       timeout for the DNS client. [default: 1]
+    -n, --name <WATCHDOG_NAME>    watchdog name to print in messages. [default: dns]
+
+ARGS:
+    <SERVER>        dns server to test.
+    <NAME>          resource record to look up.
+    <QUERY_TYPE>    indicates what type of query is required — ANY, A, MX, SIG, etc. [default: A]
+```
