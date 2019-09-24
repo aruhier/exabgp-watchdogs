@@ -1,0 +1,17 @@
+[package]
+name = "exabgp-watchdogs"
+version = "0.1.0"
+authors = ["Anthony Ruhier <anthony.ruhier@gmail.com>"]
+edition = "2018"
+
+[[bin]]
+name = "http-watchdog"
+path = "src/http.rs"
+
+[profile.release]
+lto = true
+opt-level = 'z'
+
+[dependencies]
+reqwest = "0.9"
+clap = "2"

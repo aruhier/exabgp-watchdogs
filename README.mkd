@@ -1,0 +1,32 @@
+Watchdogs for Exabgp
+====================
+
+Multiple watchdogs for [ExaBGP](https://github.com/Exa-Networks/exabgp).
+
+Watchdogs
+---------
+
+### HTTP
+
+Check the status of an HTTP/HTTPS endpoint.
+
+```
+http-watchdog
+HTTP watchdog for exabgp
+
+USAGE:
+    http-watchdog [FLAGS] [OPTIONS] <URI>
+
+FLAGS:
+        --check-status    check http status
+    -h, --help            Prints help information
+    -V, --version         Prints version information
+
+OPTIONS:
+        --delay <SECONDS>         delay between tests [default: 1]
+    -t, --timeout <SECONDS>       timeout for the HTTP client [default: 1]
+    -n, --name <WATCHDOG_NAME>    watchdog name to print in messages [default: http]
+
+ARGS:
+    <URI>    URI to target
+```
