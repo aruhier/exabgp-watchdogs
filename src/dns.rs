@@ -82,6 +82,7 @@ fn main() {
     run(
         matches.value_of("server").unwrap(),
         matches.value_of("name").unwrap(),
+        matches.value_of("watchdog_name").unwrap(),
         matches.value_of("query_type").unwrap(),
         value_t_or_exit!(matches.value_of("timeout"), f64),
         value_t_or_exit!(matches.value_of("delay"), f64),
@@ -92,6 +93,7 @@ fn main() {
 
 fn run(
     server: &str,
+    target: &str,
     name: &str,
     query_type: &str,
     timeout: f64,
@@ -118,7 +120,7 @@ fn run(
 
     let mut prev_check = false;
     loop {
-        let ok: bool = match client.lookup(name, RecordType::from_str(query_type).unwrap()) {
+        let ok: bool = match client.lookup(target, RecordType::from_str(query_type).unwrap()) {
             Ok(_) => true,
             Err(_) => false,
         };
