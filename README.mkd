@@ -3,6 +3,39 @@ Watchdogs for Exabgp
 
 Multiple watchdogs for [ExaBGP](https://github.com/Exa-Networks/exabgp).
 
+Installation
+------------
+
+Install cargo through rustup.
+
+Build the project by running:
+```
+cargo build --release
+```
+
+Binaries should be built in the `target/release/` directory. Each watchdog
+script has its own binary.
+
+Usage
+-----
+
+Copy the wanted built watchdogs in `/etc/exabgp`.
+Then for each watchdog, declare a service in `exabgp.conf`. For example, for
+a watchdog named `service-watchdog`, add this configuration:
+```
+process service-watchdog {
+  run /etc/exabgp/service-watchdog;
+  encoder json;
+}
+```
+
+Then use it in your session configurations by adding:
+```
+api {
+   processes [service-watchdog];
+}
+```
+
 Watchdogs
 ---------
 
