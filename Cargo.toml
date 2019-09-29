@@ -17,7 +17,8 @@ lto = true
 opt-level = 3
 
 [dependencies]
-reqwest = "0.9"
 clap = "^2"
+ctrlc = "^3.1"
+reqwest = "0.9"
 trust-dns-resolver = "^0.12"
 trust-dns-proto = ""

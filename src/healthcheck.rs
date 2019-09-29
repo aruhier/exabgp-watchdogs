@@ -1,5 +1,7 @@
+extern crate ctrlc;
+
 use crate::common::launch_script;
-use std::{thread, time};
+use std::{process, thread, time};
 
 pub trait Healthcheck {
     fn get_name(&self) -> &str;
@@ -10,6 +12,17 @@ pub trait Healthcheck {
     fn check(&self) -> bool;
     fn run(&self) {
         let mut prev_check = false;
+
+        {
+            let stop_script = self.get_stop_script().unwrap_or_default().to_owned();
+            if !stop_script.is_empty() {
+                ctrlc::set_handler(move || {
+                    launch_script(&stop_script);
+                    process::exit(0);
+                })
+                .expect("Error setting Ctrl-C handler");
+            }
+        }
         loop {
             let ok: bool = self.check();
 
