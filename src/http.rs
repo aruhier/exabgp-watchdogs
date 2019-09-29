@@ -56,8 +56,12 @@ fn main() {
     }
     let matches = app.get_matches();
 
+    let mut uri = matches.value_of("uri").unwrap().to_owned();
+    if !uri.starts_with("http://") && !uri.starts_with("https://") {
+        uri = format!("http://{}", uri);
+    }
     let healthcheck = HTTPHealthcheck::new(HTTPHealthcheckParams {
-        uri: matches.value_of("uri").unwrap(),
+        uri: &uri,
         name: matches.value_of("watchdog_name").unwrap(),
         timeout: value_t_or_exit!(matches.value_of("timeout"), f64),
         delay: value_t_or_exit!(matches.value_of("delay"), f64),
@@ -115,7 +119,10 @@ impl<'a> Healthcheck for HTTPHealthcheck<'a> {
     fn check(&self) -> bool {
         return match self.client.get(self.params.uri).send() {
             Ok(res) => !self.params.check_status || res.status().as_u16() < 400,
-            Err(_) => false,
+            Err(err) => {
+                println!("Failure {}", err);
+                false
+            }
         };
     }
 }
