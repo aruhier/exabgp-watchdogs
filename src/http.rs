@@ -21,7 +21,7 @@ fn main() {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("watchdog_name")
+            Arg::with_name("watchdog-name")
                 .short("n")
                 .long("name")
                 .value_name("WATCHDOG_NAME")
@@ -47,7 +47,7 @@ fn main() {
                 .default_value("1"),
         )
         .arg(
-            Arg::with_name("check_status")
+            Arg::with_name("check-status")
                 .long("check-status")
                 .help("check http status"),
         );
@@ -62,12 +62,12 @@ fn main() {
     }
     let healthcheck = HTTPHealthcheck::new(HTTPHealthcheckParams {
         uri: &uri,
-        name: matches.value_of("watchdog_name").unwrap(),
+        name: matches.value_of("watchdog-name").unwrap(),
         timeout: value_t_or_exit!(matches.value_of("timeout"), f64),
         delay: value_t_or_exit!(matches.value_of("delay"), f64),
-        check_status: matches.is_present("check_status"),
-        start_script: Some(matches.value_of("start_script").unwrap_or_default()),
-        stop_script: Some(matches.value_of("stop_script").unwrap_or_default()),
+        check_status: matches.is_present("check-status"),
+        start_script: Some(matches.value_of("start-script").unwrap_or_default()),
+        stop_script: Some(matches.value_of("stop-script").unwrap_or_default()),
     });
     healthcheck.run()
 }

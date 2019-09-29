@@ -34,14 +34,14 @@ fn main() {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("query_type")
+            Arg::with_name("query-type")
                 .value_name("QUERY_TYPE")
                 .default_value("A")
                 .help("indicates what type of query is required — ANY, A, MX, SIG, etc.")
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("watchdog_name")
+            Arg::with_name("watchdog-name")
                 .short("n")
                 .long("name")
                 .value_name("WATCHDOG_NAME")
@@ -90,14 +90,14 @@ fn main() {
     let healthcheck = DNSHealthcheck::new(DNSHealthcheckParams {
         server: matches.value_of("server").unwrap(),
         target: matches.value_of("name").unwrap(),
-        name: matches.value_of("watchdog_name").unwrap(),
-        query_type: matches.value_of("query_type").unwrap(),
+        name: matches.value_of("watchdog-name").unwrap(),
+        query_type: matches.value_of("query-type").unwrap(),
         timeout: value_t_or_exit!(matches.value_of("timeout"), f64),
         delay: value_t_or_exit!(matches.value_of("delay"), f64),
         attempts: value_t_or_exit!(matches.value_of("attempts"), usize),
         port: value_t_or_exit!(matches.value_of("port"), u16),
-        start_script: Some(matches.value_of("start_script").unwrap_or_default()),
-        stop_script: Some(matches.value_of("stop_script").unwrap_or_default()),
+        start_script: Some(matches.value_of("start-script").unwrap_or_default()),
+        stop_script: Some(matches.value_of("stop-script").unwrap_or_default()),
     });
     healthcheck.run()
 }
