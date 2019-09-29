@@ -2,17 +2,22 @@ extern crate clap;
 extern crate trust_dns_proto;
 extern crate trust_dns_resolver;
 
+mod common;
+mod healthcheck;
+
 use std::net::IpAddr;
 use std::str::FromStr;
-use std::{thread, time};
+use std::time;
 
 use clap::{value_t_or_exit, App, Arg};
 use trust_dns_proto::rr::record_type::RecordType;
 use trust_dns_resolver::config::*;
 use trust_dns_resolver::Resolver;
 
+use healthcheck::Healthcheck;
+
 fn main() {
-    let matches = App::new("dns-watchdog")
+    let mut app = App::new("dns-watchdog")
         .about("DNS watchdog for exabgp")
         .arg(
             Arg::with_name("server")
@@ -76,61 +81,93 @@ fn main() {
                 .help("dns server port.")
                 .takes_value(true)
                 .default_value("53"),
-        )
-        .get_matches();
+        );
+    for a in common::cli_args().iter() {
+        app = app.arg(a);
+    }
+    let matches = app.get_matches();
 
-    run(
-        matches.value_of("server").unwrap(),
-        matches.value_of("name").unwrap(),
-        matches.value_of("watchdog_name").unwrap(),
-        matches.value_of("query_type").unwrap(),
-        value_t_or_exit!(matches.value_of("timeout"), f64),
-        value_t_or_exit!(matches.value_of("delay"), f64),
-        value_t_or_exit!(matches.value_of("attempts"), usize),
-        value_t_or_exit!(matches.value_of("port"), u16),
-    )
+    let healthcheck = DNSHealthcheck::new(DNSHealthcheckParams {
+        server: matches.value_of("server").unwrap(),
+        target: matches.value_of("name").unwrap(),
+        name: matches.value_of("watchdog_name").unwrap(),
+        query_type: matches.value_of("query_type").unwrap(),
+        timeout: value_t_or_exit!(matches.value_of("timeout"), f64),
+        delay: value_t_or_exit!(matches.value_of("delay"), f64),
+        attempts: value_t_or_exit!(matches.value_of("attempts"), usize),
+        port: value_t_or_exit!(matches.value_of("port"), u16),
+        start_script: Some(matches.value_of("start_script").unwrap_or_default()),
+        stop_script: Some(matches.value_of("stop_script").unwrap_or_default()),
+    });
+    healthcheck.run()
 }
 
-fn run(
-    server: &str,
-    target: &str,
-    name: &str,
-    query_type: &str,
+struct DNSHealthcheckParams<'a> {
+    server: &'a str,
+    target: &'a str,
+    name: &'a str,
+    query_type: &'a str,
     timeout: f64,
     delay: f64,
     attempts: usize,
     port: u16,
-) {
-    let config = ResolverConfig::from_parts(
-        None,
-        vec![],
-        NameServerConfigGroup::from_ips_clear(&vec![server.parse::<IpAddr>().unwrap()], port),
-    );
+    start_script: Option<&'a str>,
+    stop_script: Option<&'a str>,
+}
 
-    let mut options = ResolverOpts::default();
-    options.timeout = time::Duration::from_millis((timeout * 1000.) as u64);
-    options.use_hosts_file = false;
-    options.cache_size = 0;
-    options.attempts = attempts;
+struct DNSHealthcheck<'a> {
+    params: DNSHealthcheckParams<'a>,
+    client: Resolver,
+}
 
-    let client = match Resolver::new(config, options) {
-        Ok(c) => c,
-        Err(e) => panic!("Fail to init client: {}", e),
-    };
+impl<'a> DNSHealthcheck<'a> {
+    pub fn new(params: DNSHealthcheckParams<'a>) -> DNSHealthcheck<'a> {
+        let config = ResolverConfig::from_parts(
+            None,
+            vec![],
+            NameServerConfigGroup::from_ips_clear(
+                &vec![params.server.parse::<IpAddr>().unwrap()],
+                params.port,
+            ),
+        );
 
-    let mut prev_check = false;
-    loop {
-        let ok: bool = match client.lookup(target, RecordType::from_str(query_type).unwrap()) {
+        let mut options = ResolverOpts::default();
+        options.timeout = time::Duration::from_millis((params.timeout * 1000.) as u64);
+        options.use_hosts_file = false;
+        options.cache_size = 0;
+        options.attempts = params.attempts;
+
+        return DNSHealthcheck {
+            client: match Resolver::new(config, options) {
+                Ok(c) => c,
+                Err(e) => panic!("Fail to init client: {}", e),
+            },
+            params: params,
+        };
+    }
+}
+
+impl<'a> Healthcheck for DNSHealthcheck<'a> {
+    fn get_name(&self) -> &str {
+        return self.params.name;
+    }
+    fn get_delay(&self) -> f64 {
+        return self.params.delay;
+    }
+    fn get_start_script(&self) -> Option<&str> {
+        return self.params.start_script;
+    }
+    fn get_stop_script(&self) -> Option<&str> {
+        return self.params.stop_script;
+    }
+
+    fn check(&self) -> bool {
+        return match self.client.lookup(
+            &self.params.target,
+            RecordType::from_str(&self.params.query_type).unwrap(),
+        ) {
             Ok(_) => true,
             Err(_) => false,
         };
-
-        if ok && !prev_check {
-            println!("announce watchdog {}", name);
-        } else if !ok && prev_check {
-            println!("withdraw watchdog {}", name);
-        }
-        prev_check = ok;
-        thread::sleep(time::Duration::from_millis((delay * 1000.) as u64));
     }
 }

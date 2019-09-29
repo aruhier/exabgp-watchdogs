@@ -57,6 +57,8 @@ FLAGS:
 
 OPTIONS:
         --delay <SECONDS>         delay between tests [default: 1]
+        --start_script <PATH>     script to trigger when announcement starts.
+        --stop_script <PATH>      script to trigger when announcement stops.
     -t, --timeout <SECONDS>       timeout for the HTTP client [default: 1]
     -n, --name <WATCHDOG_NAME>    watchdog name to print in messages [default: http]
 
@@ -84,6 +86,8 @@ OPTIONS:
         --attempts <ATTEMPTS>     number of attempts after considering that the DNS server is down. [default: 2]
         --delay <SECONDS>         delay between tests. [default: 1]
         --port <PORT>             dns server port. [default: 53]
+        --start_script <PATH>     script to trigger when announcement starts.
+        --stop_script <PATH>      script to trigger when announcement stops.
     -t, --timeout <SECONDS>       timeout for the DNS client. [default: 1]
     -n, --name <WATCHDOG_NAME>    watchdog name to print in messages. [default: dns]
 

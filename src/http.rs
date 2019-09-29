@@ -1,12 +1,17 @@
 extern crate clap;
 extern crate reqwest;
 
+mod common;
+mod healthcheck;
+
 use clap::{value_t_or_exit, App, Arg};
 use reqwest::Client;
-use std::{thread, time};
+use std::time;
+
+use healthcheck::Healthcheck;
 
 fn main() {
-    let matches = App::new("http-watchdog")
+    let mut app = App::new("http-watchdog")
         .about("HTTP watchdog for exabgp")
         .arg(
             Arg::with_name("uri")
@@ -45,40 +50,72 @@ fn main() {
             Arg::with_name("check_status")
                 .long("check-status")
                 .help("check http status"),
-        )
-        .get_matches();
+        );
+    for a in common::cli_args().iter() {
+        app = app.arg(a);
+    }
+    let matches = app.get_matches();
 
-    run(
-        matches.value_of("uri").unwrap(),
-        matches.value_of("watchdog_name").unwrap(),
-        value_t_or_exit!(matches.value_of("timeout"), f64),
-        value_t_or_exit!(matches.value_of("delay"), f64),
-        matches.is_present("check_status"),
-    )
+    let healthcheck = HTTPHealthcheck::new(HTTPHealthcheckParams {
+        uri: matches.value_of("uri").unwrap(),
+        name: matches.value_of("watchdog_name").unwrap(),
+        timeout: value_t_or_exit!(matches.value_of("timeout"), f64),
+        delay: value_t_or_exit!(matches.value_of("delay"), f64),
+        check_status: matches.is_present("check_status"),
+        start_script: Some(matches.value_of("start_script").unwrap_or_default()),
+        stop_script: Some(matches.value_of("stop_script").unwrap_or_default()),
+    });
+    healthcheck.run()
 }
 
-fn run(uri: &str, name: &str, timeout: f64, delay: f64, check_status: bool) {
-    let client = match Client::builder()
-        .timeout(time::Duration::from_millis((timeout * 1000.) as u64))
-        .build()
-    {
-        Ok(c) => c,
-        Err(e) => panic!("Fail to init client: {}", e),
-    };
+struct HTTPHealthcheckParams<'a> {
+    uri: &'a str,
+    name: &'a str,
+    timeout: f64,
+    delay: f64,
+    check_status: bool,
+    start_script: Option<&'a str>,
+    stop_script: Option<&'a str>,
+}
 
-    let mut prev_check = false;
-    loop {
-        let ok: bool = match client.get(uri).send() {
-            Ok(res) => !check_status || res.status().as_u16() < 400,
+struct HTTPHealthcheck<'a> {
+    params: HTTPHealthcheckParams<'a>,
+    client: Client,
+}
+
+impl<'a> HTTPHealthcheck<'a> {
+    pub fn new(params: HTTPHealthcheckParams<'a>) -> HTTPHealthcheck<'a> {
+        return HTTPHealthcheck {
+            client: match Client::builder()
+                .timeout(time::Duration::from_millis((params.timeout * 1000.) as u64))
+                .build()
+            {
+                Ok(c) => c,
+                Err(e) => panic!("Fail to init client: {}", e),
+            },
+            params: params,
+        };
+    }
+}
+
+impl<'a> Healthcheck for HTTPHealthcheck<'a> {
+    fn get_name(&self) -> &str {
+        return self.params.name;
+    }
+    fn get_delay(&self) -> f64 {
+        return self.params.delay;
+    }
+    fn get_start_script(&self) -> Option<&str> {
+        return self.params.start_script;
+    }
+    fn get_stop_script(&self) -> Option<&str> {
+        return self.params.stop_script;
+    }
+
+    fn check(&self) -> bool {
+        return match self.client.get(self.params.uri).send() {
+            Ok(res) => !self.params.check_status || res.status().as_u16() < 400,
             Err(_) => false,
         };
-
-        if ok && !prev_check {
-            println!("announce watchdog {}", name);
-        } else if !ok && prev_check {
-            println!("withdraw watchdog {}", name);
-        }
-        prev_check = ok;
-        thread::sleep(time::Duration::from_millis((delay * 1000.) as u64));
     }
 }
