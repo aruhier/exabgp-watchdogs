@@ -60,7 +60,7 @@ fn main() {
     if !uri.starts_with("http://") && !uri.starts_with("https://") {
         uri = format!("http://{}", uri);
     }
-    let healthcheck = HTTPHealthcheck::new(HTTPHealthcheckParams {
+    let mut healthcheck = HTTPHealthcheck::new(HTTPHealthcheckParams {
         uri: &uri,
         name: matches.value_of("watchdog-name").unwrap(),
         timeout: value_t_or_exit!(matches.value_of("timeout"), f64),
@@ -89,16 +89,24 @@ struct HTTPHealthcheck<'a> {
 
 impl<'a> HTTPHealthcheck<'a> {
     pub fn new(params: HTTPHealthcheckParams<'a>) -> HTTPHealthcheck<'a> {
-        return HTTPHealthcheck {
-            client: match Client::builder()
-                .timeout(time::Duration::from_millis((params.timeout * 1000.) as u64))
-                .build()
-            {
-                Ok(c) => c,
-                Err(e) => panic!("Fail to init client: {}", e),
-            },
+        let mut http_hc = HTTPHealthcheck {
+            client: Client::new(),
             params: params,
         };
+        http_hc.client = http_hc.get_new_client();
+        return http_hc;
+    }
+
+    fn get_new_client(&self) -> Client {
+        match Client::builder()
+            .timeout(time::Duration::from_millis(
+                (self.params.timeout * 1000.) as u64,
+            ))
+            .build()
+        {
+            Ok(c) => c,
+            Err(e) => panic!("Fail to init client: {}", e),
+        }
     }
 }
 
@@ -116,11 +124,12 @@ impl<'a> Healthcheck for HTTPHealthcheck<'a> {
         return self.params.stop_script;
     }
 
-    fn check(&self) -> bool {
+    fn check(&mut self) -> bool {
         return match self.client.get(self.params.uri).send() {
             Ok(res) => !self.params.check_status || res.status().as_u16() < 400,
             Err(err) => {
-                println!("Failure {}", err);
+                eprintln!("Failure {}", err);
+                self.client = self.get_new_client();
                 false
             }
         };
