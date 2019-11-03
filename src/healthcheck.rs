@@ -9,8 +9,8 @@ pub trait Healthcheck {
     fn get_start_script(&self) -> Option<&str>;
     fn get_stop_script(&self) -> Option<&str>;
 
-    fn check(&mut self) -> bool;
-    fn run(&mut self) {
+    fn check(&self) -> bool;
+    fn run(&self) {
         let mut prev_check = false;
 
         {

@@ -87,7 +87,7 @@ fn main() {
     }
     let matches = app.get_matches();
 
-    let mut healthcheck = DNSHealthcheck::new(DNSHealthcheckParams {
+    let healthcheck = DNSHealthcheck::new(DNSHealthcheckParams {
         server: matches.value_of("server").unwrap(),
         target: matches.value_of("name").unwrap(),
         name: matches.value_of("watchdog-name").unwrap(),
@@ -161,7 +161,7 @@ impl<'a> Healthcheck for DNSHealthcheck<'a> {
         return self.params.stop_script;
     }
 
-    fn check(&mut self) -> bool {
+    fn check(&self) -> bool {
         return match self.client.lookup(
             &self.params.target,
             RecordType::from_str(&self.params.query_type).unwrap(),
