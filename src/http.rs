@@ -120,7 +120,7 @@ impl<'a> Healthcheck for HTTPHealthcheck<'a> {
         return match self.client.get(self.params.uri).send() {
             Ok(res) => !self.params.check_status || res.status().as_u16() < 400,
             Err(err) => {
-                println!("Failure {}", err);
+                eprintln!("Failure {}", err);
                 false
             }
         };
