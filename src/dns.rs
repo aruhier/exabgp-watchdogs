@@ -1,5 +1,4 @@
 extern crate clap;
-extern crate trust_dns_proto;
 extern crate trust_dns_resolver;
 
 mod common;
@@ -128,6 +127,7 @@ impl<'a> DNSHealthcheck<'a> {
             NameServerConfigGroup::from_ips_clear(
                 &vec![params.server.parse::<IpAddr>().unwrap()],
                 params.port,
+                true,
             ),
         );
 
@@ -163,8 +163,8 @@ impl<'a> Healthcheck for DNSHealthcheck<'a> {
 
     fn check(&self) -> bool {
         return match self.client.lookup(
-            &self.params.target,
-            RecordType::from_str(&self.params.query_type).unwrap(),
+            self.params.target,
+            RecordType::from_str(self.params.query_type).unwrap(),
         ) {
             Ok(_) => true,
             Err(_) => false,

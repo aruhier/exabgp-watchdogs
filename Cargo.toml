@@ -18,7 +18,7 @@ opt-level = 3
 
 [dependencies]
 clap = "^2"
-ctrlc = {version = "^3.1", features = ["termination"]}
-reqwest = "0.9"
-trust-dns-resolver = "^0.12"
-trust-dns-proto = ""
+ctrlc = {version = "^3.2", features = ["termination"]}
+reqwest = {version = "0.11", features = ["blocking"]}
+trust-dns-resolver = "^0.20"
+trust-dns-proto = "^0.20"

@@ -5,7 +5,7 @@ mod common;
 mod healthcheck;
 
 use clap::{value_t_or_exit, App, Arg};
-use reqwest::Client;
+use reqwest::blocking::Client;
 use std::time;
 
 use healthcheck::Healthcheck;
